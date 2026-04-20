@@ -14,17 +14,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # 1. Deja esto como List[str]
-    ALLOWED_ORIGINS: str = "http://localhost:5173"
-
-    # 2. AGREGA ESTE VALIDADOR (Es la clave)
-    @field_validator("ALLOWED_ORIGINS", mode="before")
-    @classmethod
-    def parse_origins(cls, v: Union[str, List[str]]) -> List[str]:
-        if isinstance(v, str):
-            # Si viene como "url1,url2", lo convierte en lista de Python
-            return [item.strip() for item in v.split(",")]
-        return v
+    # Solo el string, sin validadores complicados
+    ALLOWED_ORIGINS: str = "http://localhost:5173" 
     
     UPLOAD_DIR: str = "./storage/uploads"
     SMTP_HOST: str = "smtp.gmail.com"
