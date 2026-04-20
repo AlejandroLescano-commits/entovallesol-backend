@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # 1. Deja esto como List[str]
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173"] 
+    ALLOWED_ORIGINS: str = "http://localhost:5173"
 
     # 2. AGREGA ESTE VALIDADOR (Es la clave)
     @field_validator("ALLOWED_ORIGINS", mode="before")
