@@ -15,12 +15,13 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    # El split convierte el string "https://url1,https://url2" 
+    # en la lista ["https://url1", "https://url2"]
+    allow_origins=settings.ALLOWED_ORIGINS.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 app.include_router(api_router, prefix="/api/v1")
 
 
