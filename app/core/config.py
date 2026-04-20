@@ -1,11 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from typing import List
+from typing import List, Union
+from pydantic import field_validator  # <--- IMPORTA ESTO
 
 class Settings(BaseSettings):
     APP_NAME: str = "EntomológicaValleSol"
     DEBUG: bool = False
     
-    # Esto permite que si DATABASE_URL existe en el .env, sobrescriba al default
     DATABASE_URL: str = "postgresql://postgres:password@localhost:5432/entovallesol_db"
 
     SECRET_KEY: str
@@ -14,9 +14,17 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Nota: Pydantic a veces tiene problemas parseando listas desde strings de .env
-    # Si te da error en ALLOWED_ORIGINS, cámbialo a str y luego haz .split(",")
+    # 1. Deja esto como List[str]
     ALLOWED_ORIGINS: List[str] = ["http://localhost:5173"] 
+
+    # 2. AGREGA ESTE VALIDADOR (Es la clave)
+    @field_validator("ALLOWED_ORIGINS", mode="before")
+    @classmethod
+    def parse_origins(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str):
+            # Si viene como "url1,url2", lo convierte en lista de Python
+            return [item.strip() for item in v.split(",")]
+        return v
     
     UPLOAD_DIR: str = "./storage/uploads"
     SMTP_HOST: str = "smtp.gmail.com"
@@ -24,7 +32,6 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
 
-    # Configuración para leer el archivo .env
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 settings = Settings()
