@@ -1,75 +1,105 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
 from typing import Optional
 from datetime import date
 from app.domain.entities.produccion_sitotroga import ProduccionSitotroga
 from app.domain.entities.produccion_trichogramma import ProduccionTrichogramma
 from app.domain.entities.produccion_galleria import ProduccionGalleria
 from app.domain.entities.produccion_paratheresia import ProduccionParatheresia
+from app.domain.entities.notas_salida import (
+    NotaSalidaSitodroga, NotaSalidaAvispitas,
+    NotaSalidaMoscas, NotaSalidaGalleriamelonella,
+)
 
 class ProduccionRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    # ── Sitotroga ──
+    # ── Producción ────────────────────────────────────────────────────────────
     def create_sitotroga(self, data: dict):
         obj = ProduccionSitotroga(**data)
-        self.db.add(obj); self.db.commit(); self.db.refresh(obj); return obj
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
 
-    def list_sitotroga(self, fi: Optional[date], ff: Optional[date]):
-        q = self.db.query(ProduccionSitotroga)
-        if fi: q = q.filter(ProduccionSitotroga.fecha >= fi)
-        if ff: q = q.filter(ProduccionSitotroga.fecha <= ff)
-        return q.order_by(ProduccionSitotroga.fecha).all()
+    def list_sitotroga(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(ProduccionSitotroga).filter(ProduccionSitotroga.activo == True)
+        if fecha_inicio: q = q.filter(ProduccionSitotroga.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(ProduccionSitotroga.fecha <= fecha_fin)
+        return q.order_by(ProduccionSitotroga.fecha.desc()).all()
 
-    def get_ultimo_saldo_sitotroga(self) -> Optional[float]:
-        r = self.db.query(ProduccionSitotroga).order_by(desc(ProduccionSitotroga.fecha)).first()
-        return r.saldo if r else None
-
-    # ── Trichogramma ──
     def create_trichogramma(self, data: dict):
         obj = ProduccionTrichogramma(**data)
-        self.db.add(obj); self.db.commit(); self.db.refresh(obj); return obj
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
 
-    def list_trichogramma(self, especie: Optional[str], fi: Optional[date], ff: Optional[date]):
-        q = self.db.query(ProduccionTrichogramma)
-        if especie: q = q.filter(ProduccionTrichogramma.especie == especie)
-        if fi: q = q.filter(ProduccionTrichogramma.fecha >= fi)
-        if ff: q = q.filter(ProduccionTrichogramma.fecha <= ff)
-        return q.order_by(ProduccionTrichogramma.fecha).all()
+    def list_trichogramma(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(ProduccionTrichogramma).filter(ProduccionTrichogramma.activo == True)
+        if fecha_inicio: q = q.filter(ProduccionTrichogramma.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(ProduccionTrichogramma.fecha <= fecha_fin)
+        return q.order_by(ProduccionTrichogramma.fecha.desc()).all()
 
-    def get_ultimo_saldo_trichogramma(self, especie: str) -> Optional[float]:
-        r = (self.db.query(ProduccionTrichogramma)
-             .filter(ProduccionTrichogramma.especie == especie)
-             .order_by(desc(ProduccionTrichogramma.fecha)).first())
-        return r.saldo if r else None
-
-    # ── Galleria ──
     def create_galleria(self, data: dict):
         obj = ProduccionGalleria(**data)
-        self.db.add(obj); self.db.commit(); self.db.refresh(obj); return obj
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
 
-    def list_galleria(self, fi: Optional[date], ff: Optional[date]):
-        q = self.db.query(ProduccionGalleria)
-        if fi: q = q.filter(ProduccionGalleria.fecha >= fi)
-        if ff: q = q.filter(ProduccionGalleria.fecha <= ff)
-        return q.order_by(ProduccionGalleria.fecha).all()
+    def list_galleria(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(ProduccionGalleria).filter(ProduccionGalleria.activo == True)
+        if fecha_inicio: q = q.filter(ProduccionGalleria.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(ProduccionGalleria.fecha <= fecha_fin)
+        return q.order_by(ProduccionGalleria.fecha.desc()).all()
 
-    def get_ultimo_saldo_galleria(self) -> Optional[float]:
-        r = self.db.query(ProduccionGalleria).order_by(desc(ProduccionGalleria.fecha)).first()
-        return r.saldo if r else None
-
-    # ── Paratheresia ──
     def create_paratheresia(self, data: dict):
         obj = ProduccionParatheresia(**data)
-        self.db.add(obj); self.db.commit(); self.db.refresh(obj); return obj
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
 
-    def list_paratheresia(self, fi: Optional[date], ff: Optional[date]):
-        q = self.db.query(ProduccionParatheresia)
-        if fi: q = q.filter(ProduccionParatheresia.fecha >= fi)
-        if ff: q = q.filter(ProduccionParatheresia.fecha <= ff)
-        return q.order_by(ProduccionParatheresia.fecha).all()
+    def list_paratheresia(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(ProduccionParatheresia).filter(ProduccionParatheresia.activo == True)
+        if fecha_inicio: q = q.filter(ProduccionParatheresia.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(ProduccionParatheresia.fecha <= fecha_fin)
+        return q.order_by(ProduccionParatheresia.fecha.desc()).all()
 
-    def get_ultimo_saldo_paratheresia(self) -> Optional[float]:
-        r = self.db.query(ProduccionParatheresia).order_by(desc(ProduccionParatheresia.fecha)).first()
-        return r.saldo if r else None
+    # ── Notas de Salida ───────────────────────────────────────────────────────
+    def create_nota_sitodroga(self, data: dict):
+        obj = NotaSalidaSitodroga(**data)
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
+
+    def list_notas_sitodroga(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(NotaSalidaSitodroga).filter(NotaSalidaSitodroga.activo == True)
+        if fecha_inicio: q = q.filter(NotaSalidaSitodroga.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(NotaSalidaSitodroga.fecha <= fecha_fin)
+        return q.order_by(NotaSalidaSitodroga.fecha.desc()).all()
+
+    def create_nota_avispitas(self, data: dict):
+        obj = NotaSalidaAvispitas(**data)
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
+
+    def list_notas_avispitas(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(NotaSalidaAvispitas).filter(NotaSalidaAvispitas.activo == True)
+        if fecha_inicio: q = q.filter(NotaSalidaAvispitas.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(NotaSalidaAvispitas.fecha <= fecha_fin)
+        return q.order_by(NotaSalidaAvispitas.fecha.desc()).all()
+
+    def create_nota_moscas(self, data: dict):
+        obj = NotaSalidaMoscas(**data)
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
+
+    def list_notas_moscas(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(NotaSalidaMoscas).filter(NotaSalidaMoscas.activo == True)
+        if fecha_inicio: q = q.filter(NotaSalidaMoscas.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(NotaSalidaMoscas.fecha <= fecha_fin)
+        return q.order_by(NotaSalidaMoscas.fecha.desc()).all()
+
+    def create_nota_galleria(self, data: dict):
+        obj = NotaSalidaGalleriamelonella(**data)
+        self.db.add(obj); self.db.commit(); self.db.refresh(obj)
+        return obj
+
+    def list_notas_galleria(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
+        q = self.db.query(NotaSalidaGalleriamelonella).filter(NotaSalidaGalleriamelonella.activo == True)
+        if fecha_inicio: q = q.filter(NotaSalidaGalleriamelonella.fecha >= fecha_inicio)
+        if fecha_fin:    q = q.filter(NotaSalidaGalleriamelonella.fecha <= fecha_fin)
+        return q.order_by(NotaSalidaGalleriamelonella.fecha.desc()).all()

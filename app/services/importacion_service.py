@@ -1,35 +1,89 @@
 import pandas as pd
 from sqlalchemy.orm import Session
-from fastapi import HTTPException
 from app.services.produccion_service import ProduccionService
-from app.domain.schemas.produccion_schema import ProduccionSitotrogaCreate, ProduccionTrichogrammaCreate
+from app.domain.schemas.produccion_schema import (
+    ProduccionSitotrogaCreate, ProduccionTrichogrammaCreate,
+    ProduccionGalleriaCreate, ProduccionParathesiaCreate,
+)
 
 class ImportacionService:
-    """Carga masiva desde archivos Excel con la misma estructura que usa ValleSol."""
+    """
+    Carga masiva desde Excel.
+    Formato esperado para todas las especies:
+    Columnas: fecha | cantidad
+    (opcionalmente: id_unidad)
+    """
 
     def __init__(self, db: Session):
         self.db = db
-        self.produccion_svc = ProduccionService(db)
+        self.svc = ProduccionService(db)
+
+    def _leer_excel(self, file_bytes: bytes) -> pd.DataFrame:
+        df = pd.read_excel(file_bytes)
+        df.columns = [c.strip().lower() for c in df.columns]
+        df = df.dropna(subset=["fecha"])
+        return df
 
     def importar_sitotroga(self, file_bytes: bytes, user_id: int) -> dict:
-        df = pd.read_excel(file_bytes, header=6)
-        df.columns = ["fecha", "unidad", "produccion_dia", "salida_t_exiguum",
-                      "salida_t_pretiosum", "salida_infestacion", "salida_ventas",
-                      "salida_total", "saldo"]
-        df = df.dropna(subset=["fecha"])
-        count = 0
+        df = self._leer_excel(file_bytes)
+        count, errors = 0, 0
         for _, row in df.iterrows():
             try:
                 data = ProduccionSitotrogaCreate(
                     fecha=row["fecha"].date() if hasattr(row["fecha"], "date") else row["fecha"],
-                    produccion_dia=row.get("produccion_dia"),
-                    salida_t_exiguum=row.get("salida_t_exiguum", 0) or 0,
-                    salida_t_pretiosum=row.get("salida_t_pretiosum", 0) or 0,
-                    salida_infestacion=row.get("salida_infestacion", 0) or 0,
-                    salida_ventas=row.get("salida_ventas", 0) or 0,
+                    cantidad=float(row.get("cantidad", 0) or 0),
+                    id_unidad=int(row["id_unidad"]) if "id_unidad" in row and pd.notna(row["id_unidad"]) else None,
                 )
-                self.produccion_svc.registrar_sitotroga(data, user_id)
+                self.svc.registrar_sitotroga(data, user_id)
                 count += 1
             except Exception:
-                continue
-        return {"importados": count}
+                errors += 1
+        return {"importados": count, "errores": errors}
+
+    def importar_trichogramma(self, file_bytes: bytes, user_id: int) -> dict:
+        df = self._leer_excel(file_bytes)
+        count, errors = 0, 0
+        for _, row in df.iterrows():
+            try:
+                data = ProduccionTrichogrammaCreate(
+                    fecha=row["fecha"].date() if hasattr(row["fecha"], "date") else row["fecha"],
+                    cantidad=float(row.get("cantidad", 0) or 0),
+                    id_unidad=int(row["id_unidad"]) if "id_unidad" in row and pd.notna(row["id_unidad"]) else None,
+                )
+                self.svc.registrar_trichogramma(data, user_id)
+                count += 1
+            except Exception:
+                errors += 1
+        return {"importados": count, "errores": errors}
+
+    def importar_galleria(self, file_bytes: bytes, user_id: int) -> dict:
+        df = self._leer_excel(file_bytes)
+        count, errors = 0, 0
+        for _, row in df.iterrows():
+            try:
+                data = ProduccionGalleriaCreate(
+                    fecha=row["fecha"].date() if hasattr(row["fecha"], "date") else row["fecha"],
+                    cantidad=float(row.get("cantidad", 0) or 0),
+                    id_unidad=int(row["id_unidad"]) if "id_unidad" in row and pd.notna(row["id_unidad"]) else None,
+                )
+                self.svc.registrar_galleria(data, user_id)
+                count += 1
+            except Exception:
+                errors += 1
+        return {"importados": count, "errores": errors}
+
+    def importar_paratheresia(self, file_bytes: bytes, user_id: int) -> dict:
+        df = self._leer_excel(file_bytes)
+        count, errors = 0, 0
+        for _, row in df.iterrows():
+            try:
+                data = ProduccionParathesiaCreate(
+                    fecha=row["fecha"].date() if hasattr(row["fecha"], "date") else row["fecha"],
+                    cantidad=float(row.get("cantidad", 0) or 0),
+                    id_unidad=int(row["id_unidad"]) if "id_unidad" in row and pd.notna(row["id_unidad"]) else None,
+                )
+                self.svc.registrar_paratheresia(data, user_id)
+                count += 1
+            except Exception:
+                errors += 1
+        return {"importados": count, "errores": errors}

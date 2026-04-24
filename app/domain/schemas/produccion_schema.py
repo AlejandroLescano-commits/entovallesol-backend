@@ -2,67 +2,162 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date, datetime
 
+# ── Producción Sitotroga ──────────────────────────────────────────────────────
 class ProduccionSitotrogaCreate(BaseModel):
     fecha: date
-    produccion_dia: Optional[float] = None
-    salida_t_exiguum: float = 0
-    salida_t_pretiosum: float = 0
-    salida_infestacion: float = 0
-    salida_ventas: float = 0
-    observaciones: Optional[str] = None
+    id_unidad: Optional[int] = None
+    cantidad: float
 
-class ProduccionSitotrogaResponse(ProduccionSitotrogaCreate):
+class ProduccionSitotrogaResponse(BaseModel):
     id: int
-    salida_total: float
-    saldo: float
+    fecha: date
+    id_unidad: Optional[int]
+    cantidad: float
+    activo: bool
+    registrado_por: Optional[int]
     creado_en: datetime
     class Config:
         from_attributes = True
 
+# ── Producción Trichogramma ───────────────────────────────────────────────────
 class ProduccionTrichogrammaCreate(BaseModel):
     fecha: date
-    especie: str   # exiguum | pretiosum
-    produccion_dia: float = 0
-    salida_parasitacion: float = 0
-    salida_san_ricardo_a: float = 0
-    salida_san_ricardo_b: float = 0
-    salida_quemazón: float = 0
-    salida_trapiche: float = 0
-    salida_segundo_jiron: float = 0
-    salida_pabellon_alto: float = 0
-    salida_sacachique: float = 0
-    salida_la_encantada: float = 0
-    salida_ventas: float = 0
-    porcentaje_eclosion: Optional[float] = None
-    observaciones: Optional[str] = None
+    id_unidad: Optional[int] = None
+    cantidad: float
 
-class ProduccionTrichogrammaResponse(ProduccionTrichogrammaCreate):
+class ProduccionTrichogrammaResponse(BaseModel):
     id: int
-    salida_total: float
-    saldo: float
+    fecha: date
+    id_unidad: Optional[int]
+    cantidad: float
+    activo: bool
+    registrado_por: Optional[int]
     creado_en: datetime
     class Config:
         from_attributes = True
 
+# ── Producción Galleria ───────────────────────────────────────────────────────
 class ProduccionGalleriaCreate(BaseModel):
     fecha: date
-    produccion_dia: float = 0
-    salida_paratheresia: float = 0
-    salida_instalacion: float = 0
-    salida_ventas: float = 0
-    tasa_mortalidad: Optional[float] = None
-    observaciones: Optional[str] = None
+    id_unidad: Optional[int] = None
+    cantidad: float
 
+class ProduccionGalleriaResponse(BaseModel):
+    id: int
+    fecha: date
+    id_unidad: Optional[int]
+    cantidad: float
+    activo: bool
+    registrado_por: Optional[int]
+    creado_en: datetime
+    class Config:
+        from_attributes = True
+
+# ── Producción Paratheresia ───────────────────────────────────────────────────
 class ProduccionParathesiaCreate(BaseModel):
     fecha: date
-    produccion_dia: float = 0
-    salida_parasitacion: float = 0
-    salida_quemazón: float = 0
-    salida_segundo_jiron: float = 0
-    salida_san_ricardo_a: float = 0
-    salida_san_ricardo_b: float = 0
-    salida_sacachique: float = 0
-    salida_pabellon_alto: float = 0
-    salida_trapiche: float = 0
-    salida_ventas: float = 0
-    observaciones: Optional[str] = None
+    id_unidad: Optional[int] = None
+    cantidad: float
+
+class ProduccionParathesiaResponse(BaseModel):
+    id: int
+    fecha: date
+    id_unidad: Optional[int]
+    cantidad: float
+    activo: bool
+    registrado_por: Optional[int]
+    creado_en: datetime
+    class Config:
+        from_attributes = True
+
+# ── Notas de Salida Sitodroga ─────────────────────────────────────────────────
+class NotaSalidaSitodrogaCreate(BaseModel):
+    tiposalida: str   # T.exiguum | T.pretiosum | Infestación | Ventas
+    descripcion: Optional[str] = None
+    fecha: date
+    id_unidad: Optional[int] = None
+    factor: float = 1
+    cantidad: float
+
+class NotaSalidaSitodrogaResponse(BaseModel):
+    id: int
+    tiposalida: str
+    descripcion: Optional[str]
+    fecha: date
+    id_unidad: Optional[int]
+    factor: float
+    cantidad: float
+    activo: bool
+    registrado_por: Optional[int]
+    creado_en: datetime
+    class Config:
+        from_attributes = True
+
+# ── Notas de Salida Avispitas ─────────────────────────────────────────────────
+class NotaSalidaAvispitasCreate(BaseModel):
+    tiposalida: str   # Parasitacion | Liberacion | Ventas
+    id_lugarliberacion: Optional[int] = None
+    descripcion: Optional[str] = None
+    fecha: date
+    id_unidad: Optional[int] = None
+    cantidad: float
+
+class NotaSalidaAvispitasResponse(BaseModel):
+    id: int
+    tiposalida: str
+    id_lugarliberacion: Optional[int]
+    descripcion: Optional[str]
+    fecha: date
+    id_unidad: Optional[int]
+    cantidad: float
+    activo: bool
+    registrado_por: Optional[int]
+    creado_en: datetime
+    class Config:
+        from_attributes = True
+
+# ── Notas de Salida Moscas ────────────────────────────────────────────────────
+class NotaSalidaMoscasCreate(BaseModel):
+    tiposalida: str   # Parasitacion | Venta | Liberacion
+    id_lugarliberacion: Optional[int] = None
+    descripcion: Optional[str] = None
+    fecha: date
+    id_unidad: Optional[int] = None
+    cantidad: float
+
+class NotaSalidaMoscasResponse(BaseModel):
+    id: int
+    tiposalida: str
+    id_lugarliberacion: Optional[int]
+    descripcion: Optional[str]
+    fecha: date
+    id_unidad: Optional[int]
+    cantidad: float
+    activo: bool
+    registrado_por: Optional[int]
+    creado_en: datetime
+    class Config:
+        from_attributes = True
+
+# ── Notas de Salida Galleria melonella ────────────────────────────────────────
+class NotaSalidaGalleriaCreate(BaseModel):
+    tiposalida: str   # Paratheresia | Instalacion | Ventas
+    descripcion: Optional[str] = None
+    fecha: date
+    id_unidad: Optional[int] = None
+    cantidad: float
+    ratio: Optional[float] = None  # Solo cuando tiposalida = Paratheresia
+
+class NotaSalidaGalleriaResponse(BaseModel):
+    id: int
+    tiposalida: str
+    descripcion: Optional[str]
+    fecha: date
+    id_unidad: Optional[int]
+    cantidad: float
+    ratio: Optional[float]
+    activo: bool
+    registrado_por: Optional[int]
+    creado_en: datetime
+    class Config:
+        from_attributes = True

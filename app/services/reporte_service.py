@@ -7,38 +7,106 @@ class ReporteService:
     def __init__(self, db: Session):
         self.repo = ProduccionRepository(db)
 
+    # ── Producción ────────────────────────────────────────────────────────────
     def generar_excel_sitotroga(self, fecha_inicio: date, fecha_fin: date) -> bytes:
         registros = self.repo.list_sitotroga(fecha_inicio, fecha_fin)
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = "Sitotroga"
-        headers = ["ID", "Fecha", "Producción/día (g)", "Salida T.exiguum", "Salida T.pretiosum",
-                   "Infestación", "Ventas", "Total Salida", "Saldo"]
-        ws.append(headers)
+        ws.title = "Produccion Sitotroga"
+        ws.append(["ID", "Fecha", "ID Unidad", "Cantidad", "Activo", "Registrado por", "Creado en"])
         for r in registros:
-            ws.append([r.id, str(r.fecha), r.produccion_dia, r.salida_t_exiguum,
-                       r.salida_t_pretiosum, r.salida_infestacion, r.salida_ventas,
-                       r.salida_total, r.saldo])
-        buf = io.BytesIO()
-        wb.save(buf)
-        return buf.getvalue()
+            ws.append([r.id, str(r.fecha), r.id_unidad, r.cantidad,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
 
-    def generar_excel_trichogramma(self, especie: str, fecha_inicio: date, fecha_fin: date) -> bytes:
-        registros = self.repo.list_trichogramma(especie, fecha_inicio, fecha_fin)
+    def generar_excel_trichogramma(self, fecha_inicio: date, fecha_fin: date) -> bytes:
+        registros = self.repo.list_trichogramma(fecha_inicio, fecha_fin)
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.title = f"Trichogramma_{especie}"
-        headers = ["ID", "Fecha", "Especie", "Producción/día (pulg²)", "Parasitación",
-                   "San Ricardo A", "San Ricardo B", "Quemazón", "Trapiche",
-                   "2do Jirón", "Pabellón Alto", "Sacachique", "La Encantada",
-                   "Ventas", "Total Salida", "Saldo", "% Eclosión"]
-        ws.append(headers)
+        ws.title = "Produccion Trichogramma"
+        ws.append(["ID", "Fecha", "ID Unidad", "Cantidad", "Activo", "Registrado por", "Creado en"])
         for r in registros:
-            ws.append([r.id, str(r.fecha), r.especie, r.produccion_dia, r.salida_parasitacion,
-                       r.salida_san_ricardo_a, r.salida_san_ricardo_b, r.salida_quemazón,
-                       r.salida_trapiche, r.salida_segundo_jiron, r.salida_pabellon_alto,
-                       r.salida_sacachique, r.salida_la_encantada, r.salida_ventas,
-                       r.salida_total, r.saldo, r.porcentaje_eclosion])
-        buf = io.BytesIO()
-        wb.save(buf)
-        return buf.getvalue()
+            ws.append([r.id, str(r.fecha), r.id_unidad, r.cantidad,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
+
+    def generar_excel_galleria(self, fecha_inicio: date, fecha_fin: date) -> bytes:
+        registros = self.repo.list_galleria(fecha_inicio, fecha_fin)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Produccion Galleria"
+        ws.append(["ID", "Fecha", "ID Unidad", "Cantidad", "Activo", "Registrado por", "Creado en"])
+        for r in registros:
+            ws.append([r.id, str(r.fecha), r.id_unidad, r.cantidad,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
+
+    def generar_excel_paratheresia(self, fecha_inicio: date, fecha_fin: date) -> bytes:
+        registros = self.repo.list_paratheresia(fecha_inicio, fecha_fin)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Produccion Paratheresia"
+        ws.append(["ID", "Fecha", "ID Unidad", "Cantidad", "Activo", "Registrado por", "Creado en"])
+        for r in registros:
+            ws.append([r.id, str(r.fecha), r.id_unidad, r.cantidad,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
+
+    # ── Notas de Salida ───────────────────────────────────────────────────────
+    def generar_excel_notas_sitodroga(self, fecha_inicio: date, fecha_fin: date) -> bytes:
+        registros = self.repo.list_notas_sitodroga(fecha_inicio, fecha_fin)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Notas Sitodroga"
+        ws.append(["ID", "Fecha", "Tipo Salida", "Descripción", "ID Unidad",
+                   "Factor", "Cantidad", "Activo", "Registrado por", "Creado en"])
+        for r in registros:
+            ws.append([r.id, str(r.fecha), r.tiposalida, r.descripcion,
+                       r.id_unidad, r.factor, r.cantidad,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
+
+    def generar_excel_notas_avispitas(self, fecha_inicio: date, fecha_fin: date) -> bytes:
+        registros = self.repo.list_notas_avispitas(fecha_inicio, fecha_fin)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Notas Avispitas"
+        ws.append(["ID", "Fecha", "Tipo Salida", "Lugar Liberación", "Descripción",
+                   "ID Unidad", "Cantidad", "Activo", "Registrado por", "Creado en"])
+        for r in registros:
+            ws.append([r.id, str(r.fecha), r.tiposalida, r.id_lugarliberacion,
+                       r.descripcion, r.id_unidad, r.cantidad,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
+
+    def generar_excel_notas_moscas(self, fecha_inicio: date, fecha_fin: date) -> bytes:
+        registros = self.repo.list_notas_moscas(fecha_inicio, fecha_fin)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Notas Moscas"
+        ws.append(["ID", "Fecha", "Tipo Salida", "Lugar Liberación", "Descripción",
+                   "ID Unidad", "Cantidad", "Activo", "Registrado por", "Creado en"])
+        for r in registros:
+            ws.append([r.id, str(r.fecha), r.tiposalida, r.id_lugarliberacion,
+                       r.descripcion, r.id_unidad, r.cantidad,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
+
+    def generar_excel_notas_galleria(self, fecha_inicio: date, fecha_fin: date) -> bytes:
+        registros = self.repo.list_notas_galleria(fecha_inicio, fecha_fin)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Notas Galleria"
+        ws.append(["ID", "Fecha", "Tipo Salida", "Descripción", "ID Unidad",
+                   "Cantidad", "Ratio", "Activo", "Registrado por", "Creado en"])
+        for r in registros:
+            ws.append([r.id, str(r.fecha), r.tiposalida, r.descripcion,
+                       r.id_unidad, r.cantidad, r.ratio,
+                       r.activo, r.registrado_por, str(r.creado_en)])
+        return _to_bytes(wb)
+
+
+def _to_bytes(wb: openpyxl.Workbook) -> bytes:
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
