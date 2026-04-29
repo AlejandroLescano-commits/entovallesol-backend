@@ -41,7 +41,18 @@ class ProduccionService:
 
     # ── Notas de Salida ───────────────────────────────────────────────────────
     def registrar_nota_sitodroga(self, data: NotaSalidaSitodrogaCreate, user_id: int):
-        return self.repo.create_nota_sitodroga({**data.model_dump(), "registrado_por": user_id})
+        payload = data.model_dump()
+
+        if data.tiposalida == "T.exiguum":
+            planchas = (data.cantidad - data.factor) / 12.5
+            self.repo.create_trichogramma({
+                "fecha": data.fecha,
+                "cantidad": planchas * 80,  # pulg²
+                "id_unidad": data.id_unidad,
+                "registrado_por": user_id
+            })
+
+        return self.repo.create_nota_sitodroga({**payload, "registrado_por": user_id})
 
     def listar_notas_sitodroga(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
         return self.repo.list_notas_sitodroga(fecha_inicio, fecha_fin)
