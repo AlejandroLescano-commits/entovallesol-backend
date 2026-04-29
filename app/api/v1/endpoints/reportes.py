@@ -5,6 +5,7 @@ from datetime import date
 from app.infrastructure.database.session import get_db
 from app.core.dependencies import get_current_user
 from app.services.reporte_service import ReporteService
+from calendar import monthrange
 
 router = APIRouter()
 
@@ -110,4 +111,64 @@ def excel_notas_galleria(
         content=data,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename=notas_galleria_{fecha_inicio}_{fecha_fin}.xlsx"}
+    )
+
+@router.get("/excel/sitotroga/mensual")
+def excel_sitotroga_mensual(
+    mes: int = Query(..., ge=1, le=12),
+    anio: int = Query(..., ge=2020),
+    db: Session = Depends(get_db), _=Depends(get_current_user)
+):
+    fi = date(anio, mes, 1)
+    ff = date(anio, mes, monthrange(anio, mes)[1])
+    data = ReporteService(db).generar_excel_sitotroga(fi, ff)
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=sitotroga_{anio}_{mes:02d}.xlsx"}
+    )
+
+@router.get("/excel/trichogramma/mensual")
+def excel_trichogramma_mensual(
+    mes: int = Query(..., ge=1, le=12),
+    anio: int = Query(..., ge=2020),
+    db: Session = Depends(get_db), _=Depends(get_current_user)
+):
+    fi = date(anio, mes, 1)
+    ff = date(anio, mes, monthrange(anio, mes)[1])
+    data = ReporteService(db).generar_excel_trichogramma(fi, ff)
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=trichogramma_{anio}_{mes:02d}.xlsx"}
+    )
+
+@router.get("/excel/paratheresia/mensual")
+def excel_paratheresia_mensual(
+    mes: int = Query(..., ge=1, le=12),
+    anio: int = Query(..., ge=2020),
+    db: Session = Depends(get_db), _=Depends(get_current_user)
+):
+    fi = date(anio, mes, 1)
+    ff = date(anio, mes, monthrange(anio, mes)[1])
+    data = ReporteService(db).generar_excel_paratheresia(fi, ff)
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=paratheresia_{anio}_{mes:02d}.xlsx"}
+    )
+
+@router.get("/excel/galleria/mensual")
+def excel_galleria_mensual(
+    mes: int = Query(..., ge=1, le=12),
+    anio: int = Query(..., ge=2020),
+    db: Session = Depends(get_db), _=Depends(get_current_user)
+):
+    fi = date(anio, mes, 1)
+    ff = date(anio, mes, monthrange(anio, mes)[1])
+    data = ReporteService(db).generar_excel_galleria(fi, ff)
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=galleria_{anio}_{mes:02d}.xlsx"}
     )
