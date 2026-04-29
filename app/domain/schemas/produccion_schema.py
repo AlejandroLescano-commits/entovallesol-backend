@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import date, datetime
 
@@ -79,6 +79,14 @@ class NotaSalidaSitodrogaCreate(BaseModel):
     factor: float = 1
     cantidad: float
 
+    @field_validator('cantidad')
+    @classmethod
+    def cantidad_positiva(cls, v):
+        if v <= 0:
+            raise ValueError('La cantidad debe ser mayor a 0')
+        return v
+
+
 class NotaSalidaSitodrogaResponse(BaseModel):
     id: int
     tiposalida: str
@@ -101,6 +109,13 @@ class NotaSalidaAvispitasCreate(BaseModel):
     fecha: date
     id_unidad: Optional[int] = None
     cantidad: float
+
+    @field_validator('cantidad')
+    @classmethod
+    def cantidad_positiva(cls, v):
+        if v <= 0:
+            raise ValueError('La cantidad debe ser mayor a 0')
+        return v
 
 class NotaSalidaAvispitasResponse(BaseModel):
     id: int
