@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 from app.domain.entities.produccion_sitotroga import ProduccionSitotroga
 from app.domain.entities.produccion_trichogramma import ProduccionTrichogramma
 from app.domain.entities.produccion_galleria import ProduccionGalleria
@@ -102,4 +102,107 @@ class ProduccionRepository:
         q = self.db.query(NotaSalidaGalleriamelonella).filter(NotaSalidaGalleriamelonella.activo == True)
         if fecha_inicio: q = q.filter(NotaSalidaGalleriamelonella.fecha >= fecha_inicio)
         if fecha_fin:    q = q.filter(NotaSalidaGalleriamelonella.fecha <= fecha_fin)
+
         return q.order_by(NotaSalidaGalleriamelonella.fecha.desc()).all()
+    def anular_sitotroga(self, id: int, user_id: int):
+        obj = self.db.query(ProduccionSitotroga).filter(
+            ProduccionSitotroga.id == id, ProduccionSitotroga.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Registro no encontrado o ya anulado")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj  # sin commit — el service lo maneja
+
+    def anular_trichogramma(self, id: int, user_id: int):
+        obj = self.db.query(ProduccionTrichogramma).filter(
+            ProduccionTrichogramma.id == id, ProduccionTrichogramma.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Registro no encontrado o ya anulado")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj
+
+    def anular_galleria(self, id: int, user_id: int):
+        obj = self.db.query(ProduccionGalleria).filter(
+            ProduccionGalleria.id == id, ProduccionGalleria.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Registro no encontrado o ya anulado")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj
+
+    def anular_paratheresia(self, id: int, user_id: int):
+        obj = self.db.query(ProduccionParatheresia).filter(
+            ProduccionParatheresia.id == id, ProduccionParatheresia.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Registro no encontrado o ya anulado")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj
+
+    def anular_nota_sitodroga(self, id: int, user_id: int):
+        obj = self.db.query(NotaSalidaSitodroga).filter(
+            NotaSalidaSitodroga.id == id, NotaSalidaSitodroga.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Nota no encontrada o ya anulada")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj
+
+    def anular_nota_avispitas(self, id: int, user_id: int):
+        obj = self.db.query(NotaSalidaAvispitas).filter(
+            NotaSalidaAvispitas.id == id, NotaSalidaAvispitas.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Nota no encontrada o ya anulada")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj
+
+    def anular_nota_moscas(self, id: int, user_id: int):
+        obj = self.db.query(NotaSalidaMoscas).filter(
+            NotaSalidaMoscas.id == id, NotaSalidaMoscas.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Nota no encontrada o ya anulada")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj
+
+    def anular_nota_galleria(self, id: int, user_id: int):
+        obj = self.db.query(NotaSalidaGalleriamelonella).filter(
+            NotaSalidaGalleriamelonella.id == id, NotaSalidaGalleriamelonella.activo == True
+        ).first()
+        if not obj:
+            raise ValueError("Nota no encontrada o ya anulada")
+        obj.activo = False
+        obj.anulado_por = user_id
+        obj.anulado_en = datetime.utcnow()
+        return obj
+
+    # Helper: buscar registro de trichogramma asociado a una nota de sitodroga
+    def find_trichogramma_por_nota(self, nota_id: int):
+        """Busca el registro de trichogramma que fue creado automáticamente por una nota sitodroga T.exiguum"""
+        return self.db.query(ProduccionTrichogramma).filter(
+            ProduccionTrichogramma.nota_origen_id == nota_id,
+            ProduccionTrichogramma.activo == True
+        ).first()
+
+    # Helper: buscar registro de paratheresia asociado a una nota de galleria
+    def find_paratheresia_por_nota(self, nota_id: int):
+        return self.db.query(ProduccionParatheresia).filter(
+            ProduccionParatheresia.nota_origen_id == nota_id,
+            ProduccionParatheresia.activo == True
+        ).first()
