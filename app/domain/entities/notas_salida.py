@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, Float, Date, Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy.sql import func
 from app.infrastructure.database.base import Base
+from sqlalchemy import Column, Integer, DateTime, Boolean
+
 
 class NotaSalidaSitodroga(Base):
     __tablename__ = "notasalida_sitodroga"
@@ -14,12 +16,17 @@ class NotaSalidaSitodroga(Base):
     activo         = Column(Boolean, default=True)
     registrado_por = Column(Integer, ForeignKey("usuarios.id"))
     creado_en      = Column(DateTime(timezone=True), server_default=func.now())
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
 
 class DetalleNotaSalidaSitodroga(Base):
     __tablename__ = "detalle_notasalida_sitodroga"
     id            = Column(Integer, primary_key=True, index=True)
     id_notasalida = Column(Integer, ForeignKey("notasalida_sitodroga.id"), nullable=False)
     activo        = Column(Boolean, default=True)
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
+    
 
 class NotaSalidaAvispitas(Base):
     __tablename__ = "notasalida_avispitas"
@@ -33,12 +40,16 @@ class NotaSalidaAvispitas(Base):
     activo             = Column(Boolean, default=True)
     registrado_por     = Column(Integer, ForeignKey("usuarios.id"))
     creado_en          = Column(DateTime(timezone=True), server_default=func.now())
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
 
 class DetalleNotaSalidaAvispitas(Base):
     __tablename__ = "detalle_notasalida_avispitas"
     id            = Column(Integer, primary_key=True, index=True)
     id_notasalida = Column(Integer, ForeignKey("notasalida_avispitas.id"), nullable=False)
     activo        = Column(Boolean, default=True)
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
 
 class NotaSalidaMoscas(Base):
     __tablename__ = "notasalida_moscas"
@@ -52,12 +63,16 @@ class NotaSalidaMoscas(Base):
     activo             = Column(Boolean, default=True)
     registrado_por     = Column(Integer, ForeignKey("usuarios.id"))
     creado_en          = Column(DateTime(timezone=True), server_default=func.now())
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
 
 class DetalleNotaSalidaMoscas(Base):
     __tablename__ = "detalle_notasalida_moscas"
     id            = Column(Integer, primary_key=True, index=True)
     id_notasalida = Column(Integer, ForeignKey("notasalida_moscas.id"), nullable=False)
     activo        = Column(Boolean, default=True)
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
 
 class NotaSalidaGalleriamelonella(Base):
     __tablename__ = "notasalida_galleriamelonella"
@@ -71,9 +86,13 @@ class NotaSalidaGalleriamelonella(Base):
     activo         = Column(Boolean, default=True)
     registrado_por = Column(Integer, ForeignKey("usuarios.id"))
     creado_en      = Column(DateTime(timezone=True), server_default=func.now())
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
 
 class DetalleNotaSalidaGalleriamelonella(Base):
     __tablename__ = "detalle_notasalida_galleriamelonella"
     id            = Column(Integer, primary_key=True, index=True)
     id_notasalida = Column(Integer, ForeignKey("notasalida_galleriamelonella.id"), nullable=False)
     activo        = Column(Boolean, default=True)
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
