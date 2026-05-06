@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from typing import Optional
+from fastapi import HTTPException
 from datetime import date
 from app.infrastructure.database.session import get_db
 from app.core.dependencies import get_current_user
@@ -89,3 +90,61 @@ def registrar_nota_galleria(data: NotaSalidaGalleriaCreate, db: Session = Depend
 @router.get("/notas/galleria", response_model=list[NotaSalidaGalleriaResponse])
 def listar_notas_galleria(fecha_inicio: Optional[date] = None, fecha_fin: Optional[date] = None, db: Session = Depends(get_db), _=Depends(get_current_user)):
     return ProduccionService(db).listar_notas_galleria(fecha_inicio, fecha_fin)
+
+# ── Anulaciones Producción ────────────────────────────────────────────────────
+@router.delete("/sitotroga/{id}", response_model=ProduccionSitotrogaResponse)
+def anular_sitotroga(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_sitotroga(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/trichogramma/{id}", response_model=ProduccionTrichogrammaResponse)
+def anular_trichogramma(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_trichogramma(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/galleria/{id}", response_model=ProduccionGalleriaResponse)
+def anular_galleria(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_galleria(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/paratheresia/{id}", response_model=ProduccionParathesiaResponse)
+def anular_paratheresia(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_paratheresia(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+# ── Anulaciones Notas de Salida ───────────────────────────────────────────────
+@router.delete("/notas/sitodroga/{id}", response_model=NotaSalidaSitodrogaResponse)
+def anular_nota_sitodroga(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_nota_sitodroga(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/notas/avispitas/{id}", response_model=NotaSalidaAvispitasResponse)
+def anular_nota_avispitas(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_nota_avispitas(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/notas/moscas/{id}", response_model=NotaSalidaMoscasResponse)
+def anular_nota_moscas(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_nota_moscas(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/notas/galleria/{id}", response_model=NotaSalidaGalleriaResponse)
+def anular_nota_galleria(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).anular_nota_galleria(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
