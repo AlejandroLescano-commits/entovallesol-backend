@@ -11,3 +11,5 @@ class ProduccionGalleria(Base):
     activo         = Column(Boolean, default=True)
     registrado_por = Column(Integer, ForeignKey("usuarios.id"))
     creado_en      = Column(DateTime(timezone=True), server_default=func.now())
+    anulado_por = Column(Integer, ForeignKey("usuarios.id"), nullable=True)
+    anulado_en  = Column(DateTime, nullable=True)
