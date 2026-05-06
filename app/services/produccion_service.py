@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import date
+from datetime import date, datetime
 from math import floor
 from app.infrastructure.repositories.produccion_repository import ProduccionRepository
 from app.domain.schemas.produccion_schema import (
@@ -43,16 +43,21 @@ class ProduccionService:
     def registrar_nota_sitodroga(self, data: NotaSalidaSitodrogaCreate, user_id: int):
         payload = data.model_dump()
 
+        # Primero guardamos la nota para obtener su ID
+        nota = self.repo.create_nota_sitodroga({**payload, "registrado_por": user_id})
+
+        # Efecto secundario: genera producción de Trichogramma enlazada
         if data.tiposalida == "T.exiguum":
             planchas = (data.cantidad - data.factor) / 12.5
             self.repo.create_trichogramma({
                 "fecha": data.fecha,
                 "cantidad": planchas * 80,  # pulg²
                 "id_unidad": data.id_unidad,
-                "registrado_por": user_id
+                "registrado_por": user_id,
+                "nota_origen_id": nota.id,
             })
 
-        return self.repo.create_nota_sitodroga({**payload, "registrado_por": user_id})
+        return nota
 
     def listar_notas_sitodroga(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
         return self.repo.list_notas_sitodroga(fecha_inicio, fecha_fin)
@@ -69,23 +74,130 @@ class ProduccionService:
     def listar_notas_moscas(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
         return self.repo.list_notas_moscas(fecha_inicio, fecha_fin)
 
-    
     def listar_notas_galleria(self, fecha_inicio: Optional[date], fecha_fin: Optional[date]):
         return self.repo.list_notas_galleria(fecha_inicio, fecha_fin)
-    
+
     def registrar_nota_galleria(self, data: NotaSalidaGalleriaCreate, user_id: int):
         payload = data.model_dump()
 
+        # Primero guardamos la nota para obtener su ID
+        nota = self.repo.create_nota_galleria({**payload, "registrado_por": user_id})
+
+        # Efecto secundario: genera producción de Paratheresia enlazada
         if data.tiposalida == "Paratheresia" and data.ratio:
             parejas = floor(data.cantidad / data.ratio)
-
-            # 👉 afecta saldo de Paratheresia
             self.repo.create_paratheresia({
                 "fecha": data.fecha,
                 "cantidad": parejas,
                 "id_unidad": data.id_unidad,
-                "registrado_por": user_id
+                "registrado_por": user_id,
+                "nota_origen_id": nota.id,
             })
 
-        # 👉 guarda la nota normal
-        return self.repo.create_nota_galleria({**payload, "registrado_por": user_id})
+        return nota
+
+    # ── Anulaciones Producción ────────────────────────────────────────────────
+    def anular_sitotroga(self, id: int, user_id: int):
+        try:
+            obj = self.repo.anular_sitotroga(id, user_id)
+            self.repo.db.commit()
+            self.repo.db.refresh(obj)
+            return obj
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def anular_trichogramma(self, id: int, user_id: int):
+        try:
+            obj = self.repo.anular_trichogramma(id, user_id)
+            self.repo.db.commit()
+            self.repo.db.refresh(obj)
+            return obj
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def anular_galleria(self, id: int, user_id: int):
+        try:
+            obj = self.repo.anular_galleria(id, user_id)
+            self.repo.db.commit()
+            self.repo.db.refresh(obj)
+            return obj
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def anular_paratheresia(self, id: int, user_id: int):
+        try:
+            obj = self.repo.anular_paratheresia(id, user_id)
+            self.repo.db.commit()
+            self.repo.db.refresh(obj)
+            return obj
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    # ── Anulaciones Notas de Salida ───────────────────────────────────────────
+    def anular_nota_sitodroga(self, id: int, user_id: int):
+        """
+        Si era T.exiguum, anula también el ProduccionTrichogramma
+        que se creó automáticamente. Todo en una sola transacción.
+        """
+        try:
+            nota = self.repo.anular_nota_sitodroga(id, user_id)
+
+            if nota.tiposalida == "T.exiguum":
+                trich = self.repo.find_trichogramma_por_nota(id)
+                if trich:
+                    trich.activo = False
+                    trich.anulado_por = user_id
+                    trich.anulado_en = datetime.utcnow()
+
+            self.repo.db.commit()
+            self.repo.db.refresh(nota)
+            return nota
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def anular_nota_avispitas(self, id: int, user_id: int):
+        try:
+            obj = self.repo.anular_nota_avispitas(id, user_id)
+            self.repo.db.commit()
+            self.repo.db.refresh(obj)
+            return obj
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def anular_nota_moscas(self, id: int, user_id: int):
+        try:
+            obj = self.repo.anular_nota_moscas(id, user_id)
+            self.repo.db.commit()
+            self.repo.db.refresh(obj)
+            return obj
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def anular_nota_galleria(self, id: int, user_id: int):
+        """
+        Si era Paratheresia, anula también el ProduccionParatheresia
+        que se creó automáticamente. Todo en una sola transacción.
+        """
+        try:
+            nota = self.repo.anular_nota_galleria(id, user_id)
+
+            if nota.tiposalida == "Paratheresia":
+                par = self.repo.find_paratheresia_por_nota(id)
+                if par:
+                    par.activo = False
+                    par.anulado_por = user_id
+                    par.anulado_en = datetime.utcnow()
+
+            self.repo.db.commit()
+            self.repo.db.refresh(nota)
+            return nota
+        except Exception:
+            self.repo.db.rollback()
+            raise
