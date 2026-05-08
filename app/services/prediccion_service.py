@@ -1,109 +1,274 @@
-from sqlalchemy.orm import Session
+# app/services/prediccion_service.py
+import io
+import math
+from collections import defaultdict
 from datetime import date, timedelta
-from typing import Optional
+
+import joblib
 import numpy as np
-from sklearn.linear_model import LinearRegression
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
 from app.infrastructure.repositories.produccion_repository import ProduccionRepository
+
+
+# ── Función auxiliar a nivel de módulo ───────────────────────────────────────
+def _sanitizar(obj):
+    """Convierte nan/inf a None recursivamente para que JSON no explote."""
+    if isinstance(obj, float):
+        return None if (math.isnan(obj) or math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _sanitizar(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitizar(v) for v in obj]
+    return obj
+
+
+# ── Configuración central de especies ────────────────────────────────────────
+ESPECIES = {
+    "sitotroga": {
+        "nombre":       "Sitotroga cerealella",
+        "unidad":       "gramos",
+        "list_prod":    "list_sitotroga",
+        "list_salidas": "list_notas_sitodroga",
+        "tipos_salida": ["T.exiguum", "T.pretiosum", "Infestación", "Ventas"],
+    },
+    "trichogramma": {
+        "nombre":       "Trichogramma",
+        "unidad":       "pulgadas",
+        "list_prod":    "list_trichogramma",
+        "list_salidas": "list_notas_avispitas",
+        "tipos_salida": ["Parasitacion", "Liberacion", "Ventas"],
+    },
+    "galleria": {
+        "nombre":       "Galleria melonella",
+        "unidad":       "unidades",
+        "list_prod":    "list_galleria",
+        "list_salidas": "list_notas_galleria",
+        "tipos_salida": ["Paratheresia", "Instalacion", "Ventas"],
+    },
+    "paratheresia": {
+        "nombre":       "Paratheresia claripalpis",
+        "unidad":       "parejas",
+        "list_prod":    "list_paratheresia",
+        "list_salidas": "list_notas_moscas",
+        "tipos_salida": ["Parasitacion", "Venta", "Liberacion"],
+    },
+}
 
 
 class PrediccionService:
     def __init__(self, db: Session):
+        self.db   = db
         self.repo = ProduccionRepository(db)
 
-    # ── Método central de predicción ──────────────────────────────────────────
-    def _predecir(self, fechas: list, cantidades: list, dias_futuro: int) -> dict:
-        """
-        Recibe listas de fechas y cantidades históricas.
-        Devuelve predicción de demanda y producción necesaria para los próximos días.
-        """
-        if len(cantidades) < 2:
-            return {"error": "No hay suficientes datos históricos para predecir (mínimo 2 registros)."}
+    # ── Carga de modelo desde BD ──────────────────────────────────────────────
 
-        # Convertir fechas a número ordinal para regresión
-        X = np.array([d.toordinal() for d in fechas]).reshape(-1, 1)
-        y = np.array(cantidades, dtype=float)
+    def _cargar_modelo(self, especie: str):
+        row = self.db.execute(
+            text("SELECT modelo_pkl FROM modelo_entrenado WHERE especie = :e"),
+            {"e": especie}
+        ).first()
+        if not row or not row[0]:
+            return None
+        return joblib.load(io.BytesIO(bytes(row[0])))
 
-        modelo = LinearRegression()
-        modelo.fit(X, y)
+    def _info_modelo(self, especie: str) -> dict:
+        row = self.db.execute(
+            text("""
+                SELECT r2_score, mae, rmse, n_registros, entrenado_en
+                FROM modelo_entrenado WHERE especie = :e
+            """),
+            {"e": especie}
+        ).mappings().first()
+        return dict(row) if row else {}
 
-        # Generar predicciones para los próximos N días
-        hoy = date.today()
-        fechas_futuras = [hoy + timedelta(days=i+1) for i in range(dias_futuro)]
-        X_futuro = np.array([d.toordinal() for d in fechas_futuras]).reshape(-1, 1)
-        predicciones = modelo.predict(X_futuro)
+    def _config_especie(self, especie: str) -> dict:
+        row = self.db.execute(
+            text("SELECT * FROM modelo_config WHERE especie = :e"),
+            {"e": especie}
+        ).mappings().first()
+        return dict(row) if row else {}
 
-        # Producción necesaria = predicción + 10% de margen de seguridad
-        produccion_necesaria = [round(max(0, p * 1.1), 2) for p in predicciones]
-        demanda_predicha = [round(max(0, p), 2) for p in predicciones]
+    # ── Motor de predicción ───────────────────────────────────────────────────
+
+    def _predecir(
+        self,
+        modelo,
+        fechas_hist:     list,
+        cantidades_hist: list,
+        dias_futuro:     int,
+    ) -> dict:
+        X_hist = np.array([d.toordinal() for d in fechas_hist]).reshape(-1, 1)
+        y_hist = np.array(cantidades_hist, dtype=float)
+
+        hoy            = date.today()
+        fechas_futuras = [hoy + timedelta(days=i + 1) for i in range(dias_futuro)]
+        X_fut          = np.array([d.toordinal() for d in fechas_futuras]).reshape(-1, 1)
+        preds          = modelo.predict(X_fut)
+
+        r2_raw = modelo.score(X_hist, y_hist)
+        r2     = None if (math.isnan(r2_raw) or math.isinf(r2_raw)) else round(float(r2_raw), 4)
 
         return {
-            "r2_score": round(modelo.score(X, y), 4),
-            "dias_predichos": dias_futuro,
+            "r2_score":           r2,
+            "dias_predichos":     dias_futuro,
+            "tendencia":          "creciente" if modelo.coef_[0] > 0 else "decreciente",
+            "promedio_historico": round(float(np.mean(y_hist)), 2),
             "predicciones": [
                 {
-                    "fecha": str(f),
-                    "demanda_estimada": d,
-                    "produccion_necesaria": p,
+                    "fecha":                str(f),
+                    "demanda_estimada":     round(max(0.0, float(p)), 2),
+                    "produccion_necesaria": round(max(0.0, float(p) * 1.1), 2),
                 }
-                for f, d, p in zip(fechas_futuras, demanda_predicha, produccion_necesaria)
+                for f, p in zip(fechas_futuras, preds)
             ],
-            "tendencia": "creciente" if modelo.coef_[0] > 0 else "decreciente",
-            "promedio_historico": round(float(np.mean(y)), 2),
         }
 
-    # ── Sitotroga ─────────────────────────────────────────────────────────────
-    def predecir_sitotroga(self, dias_futuro: int) -> dict:
-        registros = self.repo.list_sitotroga(None, None)
-        if not registros:
-            return {"error": "Sin datos históricos de sitotroga."}
-        fechas = [r.fecha for r in registros]
-        cantidades = [r.cantidad for r in registros]
-        resultado = self._predecir(fechas, cantidades, dias_futuro)
-        resultado["especie"] = "Sitotroga cerealella"
-        resultado["unidad"] = "gramos"
+    # ── Predicción por tipo de salida ─────────────────────────────────────────
+
+    def _predecir_por_destino(
+        self,
+        modelo,
+        salidas:      list,
+        tipos_salida: list[str],
+        dias_futuro:  int,
+        es_galleria:  bool = False,
+    ) -> dict[str, dict]:
+        resultado = {}
+
+        for tipo in tipos_salida:
+            registros_tipo = [s for s in salidas if s.tiposalida == tipo]
+
+            if len(registros_tipo) < 2:
+                resultado[tipo] = {"error": f"Datos insuficientes para '{tipo}'"}
+                continue
+
+            por_fecha: dict[date, float] = defaultdict(float)
+            for s in registros_tipo:
+                cantidad = s.cantidad
+                if es_galleria and tipo == "Paratheresia" and s.ratio:
+                    cantidad = s.cantidad * s.ratio
+                por_fecha[s.fecha] += cantidad
+
+            fechas     = sorted(por_fecha.keys())
+            cantidades = [por_fecha[f] for f in fechas]
+
+            resultado[tipo] = self._predecir(modelo, fechas, cantidades, dias_futuro)
+
         return resultado
 
-    # ── Trichogramma ──────────────────────────────────────────────────────────
-    def predecir_trichogramma(self, dias_futuro: int) -> dict:
-        registros = self.repo.list_trichogramma(None, None)
-        if not registros:
-            return {"error": "Sin datos históricos de trichogramma."}
-        fechas = [r.fecha for r in registros]
-        cantidades = [r.cantidad for r in registros]
-        resultado = self._predecir(fechas, cantidades, dias_futuro)
-        resultado["especie"] = "Trichogramma"
-        resultado["unidad"] = "pulgadas"
-        return resultado
+    # ── Balance producción vs demanda ─────────────────────────────────────────
 
-    # ── Galleria ──────────────────────────────────────────────────────────────
-    def predecir_galleria(self, dias_futuro: int) -> dict:
-        registros = self.repo.list_galleria(None, None)
-        if not registros:
-            return {"error": "Sin datos históricos de galleria."}
-        fechas = [r.fecha for r in registros]
-        cantidades = [r.cantidad for r in registros]
-        resultado = self._predecir(fechas, cantidades, dias_futuro)
-        resultado["especie"] = "Galleria melonella"
-        resultado["unidad"] = "unidades"
-        return resultado
+    def _calcular_balance(
+        self,
+        pred_produccion:  dict,
+        pred_por_destino: dict[str, dict],
+    ) -> list[dict]:
+        if not pred_produccion or "predicciones" not in pred_produccion:
+            return []
 
-    # ── Paratheresia ──────────────────────────────────────────────────────────
-    def predecir_paratheresia(self, dias_futuro: int) -> dict:
-        registros = self.repo.list_paratheresia(None, None)
-        if not registros:
-            return {"error": "Sin datos históricos de paratheresia."}
-        fechas = [r.fecha for r in registros]
-        cantidades = [r.cantidad for r in registros]
-        resultado = self._predecir(fechas, cantidades, dias_futuro)
-        resultado["especie"] = "Paratheresia claripalpis"
-        resultado["unidad"] = "parejas"
-        return resultado
+        demanda_por_fecha: dict[str, float] = defaultdict(float)
+        for tipo, pred in pred_por_destino.items():
+            if "predicciones" not in pred:
+                continue
+            for p in pred["predicciones"]:
+                demanda_por_fecha[p["fecha"]] += p["demanda_estimada"]
 
-    # ── Todas juntas ──────────────────────────────────────────────────────────
-    def predecir_todas(self, dias_futuro: int) -> dict:
+        balance = []
+        for p in pred_produccion["predicciones"]:
+            fecha      = p["fecha"]
+            produccion = p["produccion_necesaria"]
+            demanda    = round(demanda_por_fecha.get(fecha, 0.0), 2)
+            diferencia = round(produccion - demanda, 2)
+            balance.append({
+                "fecha":                  fecha,
+                "produccion_esperada":    produccion,
+                "demanda_total_esperada": demanda,
+                "balance":                diferencia,
+                "estado":                 "superávit" if diferencia >= 0 else "déficit",
+            })
+
+        return balance
+
+    # ── Método principal por especie ──────────────────────────────────────────
+
+    def predecir_especie(self, clave: str, dias_futuro: int) -> dict:
+        if clave not in ESPECIES:
+            return {"error": f"Especie '{clave}' no reconocida."}
+
+        cfg_esp = ESPECIES[clave]
+
+        modelo = self._cargar_modelo(clave)
+        if not modelo:
+            return {
+                "error": (
+                    "El modelo aún no ha sido entrenado. "
+                    "Usa el botón de entrenamiento para generarlo."
+                )
+            }
+
+        info_modelo = self._info_modelo(clave)
+        config      = self._config_especie(clave)
+
+        prod_registros = getattr(self.repo, cfg_esp["list_prod"])(None, None)
+        if len(prod_registros) < 2:
+            return {"error": "No hay suficientes datos históricos de producción (mínimo 2)."}
+
+        prod_registros  = list(reversed(prod_registros))
+        fechas_prod     = [r.fecha    for r in prod_registros]
+        cantidades_prod = [r.cantidad for r in prod_registros]
+
+        pred_produccion = self._predecir(modelo, fechas_prod, cantidades_prod, dias_futuro)
+
+        salidas = getattr(self.repo, cfg_esp["list_salidas"])(None, None)
+        salidas = list(reversed(salidas))
+
+        pred_por_destino = self._predecir_por_destino(
+            modelo       = modelo,
+            salidas      = salidas,
+            tipos_salida = cfg_esp["tipos_salida"],
+            dias_futuro  = dias_futuro,
+            es_galleria  = (clave == "galleria"),
+        )
+
+        balance = self._calcular_balance(pred_produccion, pred_por_destino)
+
         return {
-            "sitotroga":    self.predecir_sitotroga(dias_futuro),
-            "trichogramma": self.predecir_trichogramma(dias_futuro),
-            "galleria":     self.predecir_galleria(dias_futuro),
-            "paratheresia": self.predecir_paratheresia(dias_futuro),
+            "especie":           cfg_esp["nombre"],
+            "unidad":            cfg_esp["unidad"],
+            "auto_train_activo": config.get("activo", False),
+            "rango_meses":       config.get("rango_meses", 6),
+            "modelo_info": {
+                "r2_score":     info_modelo.get("r2_score"),
+                "mae":          info_modelo.get("mae"),
+                "rmse":         info_modelo.get("rmse"),
+                "n_registros":  info_modelo.get("n_registros"),
+                "entrenado_en": str(info_modelo.get("entrenado_en", "")),
+            },
+            "prediccion_produccion":  pred_produccion,
+            "prediccion_por_destino": pred_por_destino,
+            "balance":                balance,
         }
+
+    # ── Todas las especies ────────────────────────────────────────────────────
+
+    def predecir_todas(self, dias_futuro: int) -> dict:
+        return _sanitizar({
+            clave: self.predecir_especie(clave, dias_futuro)
+            for clave in ESPECIES
+        })
+
+    # ── Métodos individuales (compatibilidad con router) ──────────────────────
+
+    def predecir_sitotroga(self, dias_futuro: int) -> dict:
+        return _sanitizar(self.predecir_especie("sitotroga", dias_futuro))
+
+    def predecir_trichogramma(self, dias_futuro: int) -> dict:
+        return _sanitizar(self.predecir_especie("trichogramma", dias_futuro))
+
+    def predecir_galleria(self, dias_futuro: int) -> dict:
+        return _sanitizar(self.predecir_especie("galleria", dias_futuro))
+
+    def predecir_paratheresia(self, dias_futuro: int) -> dict:
+        return _sanitizar(self.predecir_especie("paratheresia", dias_futuro))
