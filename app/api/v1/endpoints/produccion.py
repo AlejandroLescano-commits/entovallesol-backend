@@ -148,3 +148,65 @@ def anular_nota_galleria(id: int, db: Session = Depends(get_db), user=Depends(ge
         return ProduccionService(db).anular_nota_galleria(id, user.id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+
+
+
+
+
+# ── Eliminación física ────────────────────────────────────────────────────
+@router.delete("/sitotroga/{id}/eliminar")
+def eliminar_sitotroga(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_sitotroga(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/trichogramma/{id}/eliminar")
+def eliminar_trichogramma(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_trichogramma(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/galleria/{id}/eliminar")
+def eliminar_galleria(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_galleria(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/paratheresia/{id}/eliminar")
+def eliminar_paratheresia(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_paratheresia(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/notas/sitodroga/{id}/eliminar")
+def eliminar_nota_sitodroga(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_nota_sitodroga(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/notas/avispitas/{id}/eliminar")
+def eliminar_nota_avispitas(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_nota_avispitas(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/notas/moscas/{id}/eliminar")
+def eliminar_nota_moscas(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_nota_moscas(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@router.delete("/notas/galleria/{id}/eliminar")
+def eliminar_nota_galleria(id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    try:
+        return ProduccionService(db).eliminar_nota_galleria(id, user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
