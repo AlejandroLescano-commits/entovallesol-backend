@@ -180,6 +180,79 @@ class ProduccionService:
             self.repo.db.rollback()
             raise
 
+    # ── Eliminación física (requiere haber sido anulado primero) ────────────────
+    def eliminar_sitotroga(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_sitotroga(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def eliminar_trichogramma(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_trichogramma(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def eliminar_galleria(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_galleria(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def eliminar_paratheresia(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_paratheresia(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def eliminar_nota_sitodroga(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_nota_sitodroga(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def eliminar_nota_avispitas(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_nota_avispitas(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def eliminar_nota_moscas(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_nota_moscas(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
+    def eliminar_nota_galleria(self, id: int, user_id: int):
+        try:
+            self.repo.eliminar_nota_galleria(id)
+            self.repo.db.commit()
+            return {"id": id, "eliminado": True}
+        except Exception:
+            self.repo.db.rollback()
+            raise
+
     def anular_nota_galleria(self, id: int, user_id: int):
         """
         Si era Paratheresia, anula también el ProduccionParatheresia
@@ -201,3 +274,5 @@ class ProduccionService:
         except Exception:
             self.repo.db.rollback()
             raise
+
+
