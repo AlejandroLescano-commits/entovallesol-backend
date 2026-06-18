@@ -176,3 +176,21 @@ class NotaSalidaGalleriaResponse(BaseModel):
     creado_en: datetime
     class Config:
         from_attributes = True
+
+
+class LugarLiberacionCreate(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = None
+
+class LugarLiberacionUpdate(BaseModel):
+    nombre: Optional[str] = None
+    descripcion: Optional[str] = None
+    activo: Optional[bool] = None
+
+class LugarLiberacionResponse(BaseModel):
+    id: int
+    nombre: str
+    descripcion: Optional[str]
+    activo: bool
+    class Config:
+        from_attributes = True
