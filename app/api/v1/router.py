@@ -1,10 +1,9 @@
-# app/api/v1/router.py  (tu archivo de router principal)
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
     auth, usuarios, produccion, reportes,
-    importacion, configuracion, prediccion
+    importacion, configuracion, prediccion,
+    entrenamiento, proyeccion
 )
-from app.api.v1.endpoints import entrenamiento   # ← nuevo
 
 api_router = APIRouter()
 
@@ -15,4 +14,5 @@ api_router.include_router(reportes.router,       prefix="/reportes",      tags=[
 api_router.include_router(importacion.router,    prefix="/importacion",   tags=["Importación"])
 api_router.include_router(configuracion.router,  prefix="/configuracion", tags=["Configuración"])
 api_router.include_router(prediccion.router,     prefix="/prediccion",    tags=["Predicción"])
-api_router.include_router(entrenamiento.router,  prefix="/internal",      tags=["Entrenamiento"])  # ← nuevo
+api_router.include_router(entrenamiento.router,  prefix="/internal",      tags=["Entrenamiento"])
+api_router.include_router(proyeccion.router,     prefix="/proyeccion",    tags=["Proyección"])
