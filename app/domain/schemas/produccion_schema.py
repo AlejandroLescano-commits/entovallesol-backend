@@ -194,3 +194,20 @@ class LugarLiberacionResponse(BaseModel):
     activo: bool
     class Config:
         from_attributes = True
+
+
+class ProyeccionRequest(BaseModel):
+    especie_destino: str      # 'trichogramma' o 'paratheresia'
+    cantidad_objetivo: float  # ej: 30
+    fecha_objetivo: date      # ej: 2026-01-20
+
+class ProyeccionResponse(BaseModel):
+    especie_destino: str
+    cantidad_objetivo: float
+    fecha_objetivo: date
+    especie_origen: str
+    cantidad_origen_necesaria: float
+    unidad_origen: str
+    fecha_inicio_produccion: date
+    dias_ciclo: int
+    factor: float       
